@@ -1,0 +1,38 @@
+import statistics
+import math
+
+barang = ["Beras", "Minyak", "Telur", "Gula", "Susu"]
+harga = [12000, 15000, 22000, 14000, 18000]
+
+total_harga = sum(harga)
+rata_rata = statistics.mean(harga)
+pembulatan = math.ceil(rata_rata)
+
+print("Total belanja: Rp", total_harga)
+print("Rata-rata harga barang: Rp", rata_rata)
+print("Rata-rata dibulatkan ke atas: Rp", pembulatan)
+
+print("\nKategori Harga Barang:")
+
+for i in range(len(barang)):
+    if harga[i] < 15000:
+        kategori = "Murah"
+    elif harga[i] <= 20000:
+        kategori = "Sedang"
+    else:
+        kategori = "Mahal"
+        
+    print(barang[i], "= Rp", harga[i], "->", kategori)
+
+data_belanja = list(zip(barang, harga))
+data_belanja.sort(key=lambda x: x[1])
+
+print("\nDaftar barang dari harga termurah:")
+for item in data_belanja:
+    print(item[0], "= Rp", item[1])
+
+termurah = min(data_belanja, key=lambda x: x[1])
+termahal = max(data_belanja, key=lambda x: x[1])
+
+print("\nBarang paling murah :", termurah[0], "= Rp", termurah[1])
+print("Barang paling mahal :", termahal[0], "= Rp", termahal[1])
