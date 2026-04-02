@@ -1,0 +1,80 @@
+import numpy as np
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
+
+suhu       = ctrl.Antecedent(np.arange(0, 41, 1),  'suhu')
+kelembapan = ctrl.Antecedent(np.arange(0, 101, 1), 'kelembapan')
+kecepatan  = ctrl.Consequent(np.arange(0, 101, 1), 'kecepatan')
+
+suhu['Dingin'] = fuzz.trimf(suhu.universe, [0,  0,  20])
+suhu['Sejuk']  = fuzz.trimf(suhu.universe, [10, 20, 30])
+suhu['Panas']  = fuzz.trimf(suhu.universe, [25, 40, 40])
+
+kelembapan['Rendah'] = fuzz.trapmf(kelembapan.universe, [0,  0,  20, 40])
+kelembapan['Sedang'] = fuzz.trimf (kelembapan.universe, [30, 50, 70])
+kelembapan['Tinggi'] = fuzz.trapmf(kelembapan.universe, [60, 80, 100, 100])
+
+kecepatan['Lambat'] = fuzz.trapmf(kecepatan.universe, [0,  0,  20, 40])
+kecepatan['Sedang'] = fuzz.trimf (kecepatan.universe, [30, 50, 70])
+kecepatan['Cepat']  = fuzz.trapmf(kecepatan.universe, [60, 80, 100, 100])
+
+aturan1 = ctrl.Rule(suhu['Dingin'] & kelembapan['Rendah'], kecepatan['Lambat'])
+aturan2 = ctrl.Rule(suhu['Dingin'] & kelembapan['Tinggi'], kecepatan['Sedang'])
+aturan3 = ctrl.Rule(suhu['Sejuk'], kecepatan['Sedang'])
+aturan4 = ctrl.Rule(suhu['Panas'] | kelembapan['Tinggi'], kecepatan['Cepat'])
+aturan5 = ctrl.Rule(kelembapan['Sedang'] & suhu['Sejuk'], kecepatan['Sedang'])
+
+engine = ctrl.ControlSystem([aturan1, aturan2, aturan3, aturan4, aturan5])
+system = ctrl.ControlSystemSimulation(engine)
+
+print("=" * 50)
+print("  SISTEM FUZZY - KECEPATAN KIPAS ANGIN")
+print("=" * 50)
+
+suhu.view()
+kelembapan.view()
+kecepatan.view()
+input("\nTekan ENTER untuk melanjutkan ke pengujian...\n")
+
+test_cases = [
+    {"suhu": 10, "kelembapan": 20,  "label": "Dingin & Rendah"},
+    {"suhu": 20, "kelembapan": 50,  "label": "Sejuk & Sedang"},
+    {"suhu": 35, "kelembapan": 80,  "label": "Panas & Tinggi"},
+    {"suhu": 30, "kelembapan": 40,  "label": "Panas & Rendah"},
+    {"suhu": 15, "kelembapan": 75,  "label": "Dingin & Tinggi"},
+]
+
+print("\n{:<25} {:<12} {:<15} {:<20}".format(
+    "Kondisi", "Suhu (C)", "Kelembapan (%)", "Kecepatan Kipas"))
+print("-" * 75)
+
+for tc in test_cases:
+    system.input['suhu']       = tc['suhu']
+    system.input['kelembapan'] = tc['kelembapan']
+    system.compute()
+    hasil = system.output['kecepatan']
+    print("{:<25} {:<12} {:<15} {:.2f}".format(
+        tc['label'], tc['suhu'], tc['kelembapan'], hasil))
+
+print("\n" + "=" * 50)
+print("  UJI MANUAL")
+print("=" * 50)
+
+try:
+    suhu_input = float(input("Masukkan nilai suhu (0-40 C)       : "))
+    kelembapan_input = float(input("Masukkan nilai kelembapan (0-100 %) : "))
+
+    system.input['suhu']       = suhu_input
+    system.input['kelembapan'] = kelembapan_input
+    system.compute()
+
+    hasil = system.output['kecepatan']
+    print(f"\nKecepatan kipas yang disarankan : {hasil:.2f} / 100")
+
+    kecepatan.view(sim=system)
+    input("\nTekan ENTER untuk keluar...")
+
+except ValueError:
+    print("Input tidak valid. Masukkan angka yang sesuai.")
+except Exception as e:
+    print(f"Error: {e}")
